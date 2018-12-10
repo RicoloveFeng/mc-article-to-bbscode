@@ -182,20 +182,26 @@ for para in paras:
 
             #h1~5包含标题
             elif tag.name[0] == 'h' and tag.name[1] in '12345':
-                if tag.string in ["Get the", "Get 1."]: #进入版本发布模式，跳过接下来的处理
+                if debug: print(tag.contents)
+                if ("Get the" or "Get 1.") in str(tag.string): #进入版本发布模式，跳过接下来的处理
                     get_snapshot = True
                     break 
                 #h1 ~ h4 -> b, size= (7-level), ALL CAPS
                 #h5 -> size=2, Title case
                 
                 else:
-                    title_text=tag.contents[0] #<code>Foo bar</code> or 'Foo bar'
+                    #for c in tag.contents:
+                    #    title_text+=str(tag.contents[c]) 
+                    title_text = ""
                     size_level = 7-int(tag.name[1])
                     if size_level > 2:
-                        if type(title_text) == type(tag): title_text.string = title_text.string.upper()
-                        else: title_text = title_text.upper()
+                        for c in tag.contents: #<code>Foo bar</code> or 'Foo bar'
+                            if type(c) == type(tag):
+                                c.string = c.string.upper()
+                                title_text += str(c)
+                            else: title_text += c.upper()
                     else: size_level = 3
-                    sentences.append("[b][size=" + str(size_level) + "][color=Silver]" + str(title_text) + "[/color]\n" + str(title_text) + "[/size][/b]\n\n")
+                    sentences.append("[b][size=" + str(size_level) + "][color=Silver]" + title_text + "[/color]\n" + title_text + "[/size][/b]\n\n")
 
     #图片
     elif 'article-paragraph--image' in para.attrs['class']:

@@ -182,7 +182,7 @@ for para in paras:
 
             #h1~5包含标题
             elif tag.name[0] == 'h' and tag.name[1] in '12345':
-                if tag.string in ["Get the snapshot", "Get 1."]: #进入版本发布模式，跳过接下来的处理
+                if tag.string in ["Get the", "Get 1."]: #进入版本发布模式，跳过接下来的处理
                     get_snapshot = True
                     break 
                 #h1 ~ h4 -> b, size= (7-level), ALL CAPS

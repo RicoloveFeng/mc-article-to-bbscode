@@ -2,11 +2,13 @@
 debug = False           #调试模式
 ensize = 2              #英文原文的字号大小，论坛默认大小为2
 readFromFile = True     #True:从文件读取代码  False:从aurl读取代码
-translator = "Staff"    #您的称呼
-aurl="https://minecraft.net/zh-hans/article/minecraft-snapshot-18w47a"
+translator = "Kakagou"    #您的称呼
+aurl="https://minecraft.net/zh-hans/article/terrific-tools"
 
 from bs4 import BeautifulSoup
 from urllib import request
+import sys
+site = 'https://www.minecraft.net'
 
 def tagTrans(sentences):
     #统一对零散使用的标签进行转换
@@ -21,14 +23,14 @@ def tagTrans(sentences):
     #&rt; -> >
     #a href -> url= , color=#008000
 
-    bbscode= {"<em>":"[i]",
-        "</em>":"[/i]",
-        "<strong>":"[b]",
-        "</strong>":"[/b]",
+    bbscode= {"<i>":"[i]",
+        "</i>":"[/i]",
+        "<b>":"[b]",
+        "</b>":"[/b]",
         "<p>":"[color=Silver]",
         "</p>":"[/color]",
-        "<li>":"[*][color=Silver]",
-        "</li>":"[/color]",
+        "<li>":"[*]",
+        "</li>":"",
         "<ul>":"[list]",
         "</ul>":"[/list]",
         "<ol>":"[list=1]",
@@ -43,7 +45,8 @@ def tagTrans(sentences):
         "<td>":"[td]",
         "<tr>":"[tr]",
         "</td>":"[/td]",
-        "</tr>":"[/tr]"}
+        "</tr>":"[/tr]",
+        "<br/>":""}
 
     result = []
     for s in sentences:
@@ -60,7 +63,7 @@ def p(s):
             ans += str(i)
             spt = True
         elif "<a href" in str(i):
-            ans += "<[url="+ i.attrs["href"] + "][color=#008000]链接描述[/color][/url]>"
+            ans += "[url="+ i.attrs["href"] + "][color=#008000]链接描述[/color][/url]"
             spt = True
         elif spt:
             spt = False
@@ -94,13 +97,37 @@ def uolist(li):
                 if list_stack[-1] == "<ol>":
                     snum = str(lenstack[-1]) + ". "
                     lenstack[-1] += 1
-                ans += "[*][color=Silver]"+snum+line[4:-5]+"[/color]\n[*]"+snum+line[4:-5]+'\n'
+                ans += "[*]"+snum+line[4:]+"\n[*]"+snum+line[7:-4]+'\n'
     else: list_counter -= 1 #跳过嵌套导致的额外列表标签
     return ans
 
+def date(a):
+    dt = a.attrs['date-value'][:10]
+    y = dt[:4]
+    m = str(int(dt[5:7]))
+    d = str(int(dt[-2:]))
+    return y +'年' + m + '月' + d + '日'
+
+def intag(tag):
+    content = ''
+    if hasattr(tag, "contents"):
+        for s in tag.contents:
+            content += ' '.join(str(s).split())
+    return content
+
 #0 读取源代码
+if len(sys.argv) > 1:
+    try:
+        argvurl = sys.argv[1]
+        request.urlopen(argvurl)
+        readFromFile = False
+        aurl = argvurl
+    except:
+        print('Error occured when openning the link. Check your input.')
+        exit()
+
 if readFromFile:
-    f=open("urlsrc.txt","r")
+    f=open("urlsrc.txt","r", errors='ignore')
     srcode=f.read()
     f.close()
 else:
@@ -112,14 +139,14 @@ f=open("bbssrc.txt", "w", encoding = "utf-8")
 #1 输出标题
 title = Soup.find("h1").get_text().strip() #标题一般在第一个h1标签
 f.write("[postbg]bg3.png[/postbg]\n") #poster for bbs
-f.write("[align=center][img]"+Soup.find("img", class_='img-fluid').attrs['src']+"[/img]\n") #head image
+f.write("[align=center][img]"+ site + Soup.find('source').attrs['srcset']+"[/img]\n") #head image
 f.write("[color=Silver][b][size=6]"+ title +"[/size]\n") #head title
-f.write("[size=4]"+Soup.find("p", class_='lead text-center').get_text().strip()+"[/size][/color]\n")#subhead
+f.write("[size=4]"+Soup.find("p", class_='lead').get_text().strip()+"[/size][/color]\n")#subhead
 f.write("[size=6]标题[/size]\n[size=4]副标题[/size][/align][/b]\n\n")
 
 #2 处理段落
 #先将标签转换成字符串，然后将字符串转换为bbscode
-paras = Soup.find_all("div",class_=['article-paragraph','article-paragraph--image','article-paragraph--video','attributed-quote'])
+paras = Soup.find_all("div",class_=['article-paragraph','article-image-carousel','article-content--video','attributed-quote'])
 get_snapshot = False
 
 for para in paras:
@@ -204,25 +231,28 @@ for para in paras:
                     sentences.append("[b][size=" + str(size_level) + "][color=Silver]" + title_text + "[/color]\n" + title_text + "[/size][/b]\n\n")
 
     #图片
-    elif 'article-paragraph--image' in para.attrs['class']:
-        for tag in para.find_all(["p","img"]):
-            if tag.attrs.get('src'):
-                sentences.append("\n[align=center][img]" + str(tag.attrs['src']) + "[/img][/align]\n")
-            else:
-                sentences.append( "[align=center][b]" + str(tag) + "\n图片描述[/b][/align]\n\n")
+    elif 'article-image-carousel' in para.attrs['class']:
+        for tag in para.find_all("div", class_ = "slick-slide-carousel"):
+            img = tag.img.attrs['src']
+            cat = intag(tag.div)
+            sentences.append("\n[align=center][img]" + site + img + "[/img][/align]\n")
+            if cat:
+                sentences.append( "[align=center][b]" + cat + "\n图片描述[/b][/align]\n\n")
 
     #视频封面
-    elif 'article-paragraph--video' in para.attrs['class']:
-        sentences.append("\n[align=center][img]" + str(para.img.attrs['src']) + "[/img][/align]\n")
+    elif 'article-content--video' in para.attrs['class']:
+        sentences.append("\n[align=center][img]" + site + str(para.img.attrs['src']) + "[/img][/align]\n")
 
-    #引用块
-    else:
-        qt=para.blockquote
-        quote=qt.get_text().replace("&ldquo","\"").replace("&rdquo","\"").replace("&#39;","\'")
-        if 'attributed-quote__text' in qt.attrs['class']:
-            sentences.append("[img=40,28]https://ooo.0o0.ooo/2017/06/14/5941457d17453.png[/img][b]————————————————————————————[/b]\n")
-            sentences.append("[img=33,64]"+para.img.attrs['src']+"[/img][color=Silver]" + quote + "[/color]\n            引用文字\n            "+ para.cite.get_text())
-            sentences.append("[align=right][b]————————————————————————————[/b][img=40,28]https://ooo.0o0.ooo/2017/06/14/5941457d216ca.png[/img][/align]\n")
+    #引用块，且经过以上if之后，到这里的只能是引用块
+    elif 'attributed-quote__text' in para.blockquote.attrs['class']:
+        qtstrings=[]
+        for s in para.blockquote.stripped_strings:
+            qtstrings.append(s)
+        quote = qtstrings[0].replace("&ldquo","\"").replace("&rdquo","\"").replace("&#39;","\'")
+        cite = qtstrings[1]
+        #sentences.append("[img=40,28]https://ooo.0o0.ooo/2017/06/14/5941457d17453.png[/img][b]————————————————————————————[/b]\n")
+        sentences.append("[quote][float=left][img=33,64]"+para.img.attrs['src']+"[/img][/float][color=Silver]" + quote + "[/color]\n引用文字\n\n"+ cite + "[/quote]")
+        #sentences.append("[align=right][b]————————————————————————————[/b][img=40,28]https://ooo.0o0.ooo/2017/06/14/5941457d216ca.png[/img][/align]\n")
         #else: #green quote is not put in quote para
             #sentences.append("\n\n[indent][size=4][color=SeaGreen][b]|[/b][/color]"+ quote + "[/size][/indent]\n\n")
     
@@ -248,7 +278,7 @@ else:
         print(translator,aurl,title,attribution)
     if Soup.find("div", class_ = "end-with-block"): f.write("[img=16,16]https://ooo.0o0.ooo/2017/01/30/588f60bbaaf78.png[/img]\n\n")
     f.write("【" + translator + "译自[url=" + aurl + "]" + title + "[/url]】\n")
-    f.write("【作者" + attribution[0].get_text() + "，发布时间" + attribution[1].get_text()+"】")
+    f.write("【作者" + attribution[0].get_text() + "，发布时间" + date(attribution[1]) +"】")
 
 #end with closing file
 f.close()

@@ -3,7 +3,7 @@ debug = False           #调试模式
 ensize = 2              #英文原文的字号大小，论坛默认大小为2
 readFromFile = True     #True:从文件读取代码  False:从aurl读取代码
 translator = "Kakagou"    #您的称呼
-aurl="https://minecraft.net/zh-hans/article/terrific-tools"
+aurl="https://www.minecraft.net/zh-hans/article/help-streamers-support-charity--water-"
 
 from bs4 import BeautifulSoup
 from urllib import request
@@ -166,7 +166,7 @@ for para in paras:
         available_tags=["p","ul","ol","h1","h2","h3","h4","h5","blockquote","a","table"]
         for tag in para.find_all(available_tags):
             #p标签包含段落文字
-            if tag.name in ['p']: 
+            if tag.name in ['p'] and tag.parent.name != 'li': 
                 sentences.append(p(tag))
 
             #ul ol标签包含列表

@@ -102,7 +102,7 @@ def uolist(li):
     return ans
 
 def date(a):
-    dt = a.attrs['date-value'][:10]
+    dt = a.attrs['data-value'][:10]
     y = dt[:4]
     m = str(int(dt[5:7]))
     d = str(int(dt[-2:]))

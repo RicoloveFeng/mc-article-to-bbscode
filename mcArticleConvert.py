@@ -97,12 +97,13 @@ def uolist(li):
                 if list_stack[-1] == "<ol>":
                     snum = str(lenstack[-1]) + ". "
                     lenstack[-1] += 1
-                ans += "[*]"+snum+line[4:]+"\n[*]"+snum+line[7:-4]+'\n'
+                #if debug: print(line)
+                ans += "[*][color=Silver]"+snum+line[4:]+"[/color]\n[*]"+snum+line[4:-5]+'\n'
     else: list_counter -= 1 #跳过嵌套导致的额外列表标签
     return ans
 
 def date(a):
-    dt = a.attrs['date-value'][:10]
+    dt = a.attrs['data-value'][:10]
     y = dt[:4]
     m = str(int(dt[5:7]))
     d = str(int(dt[-2:]))
@@ -202,14 +203,12 @@ for para in paras:
                         if t[4:-5] != "":
                             tt=t[4:-5]
                             t = t[0:4] + "[size={}][color=Silver]".format(ensize) + tt + "[/color][/size]\n" + tt + t[-5:]
-                        if debug: print(t)
                         if t != "":
                             sentences.append(t)
                 sentences.append("[/table][/align]")
 
             #h1~5包含标题
             elif tag.name[0] == 'h' and tag.name[1] in '12345':
-                if debug: print(tag.contents)
                 if ("Get the" or "Get 1.") in str(tag.string): #进入版本发布模式，跳过接下来的处理
                     get_snapshot = True
                     break 
@@ -259,7 +258,6 @@ for para in paras:
     #最后一步，写入文件
     sentences = tagTrans(sentences)
     for s in sentences:
-        #if debug: print(s)
         f.write(s)
     if get_snapshot:
         break #通常在get snapshot段落之后是没有更多内容的
